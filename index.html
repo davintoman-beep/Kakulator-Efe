@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Efisiensi Produksi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-6 rounded-2xl shadow-lg max-w-2xl w-full">
+        <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">Kalkulator Produksi & Efisiensi</h1>
+        
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Apa Yang Ingin Dicari:</label>
+            <select id="calcMode" class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="switchMode()">
+                <option value="efisiensi">1. Cari Efisiensi (%)</option>
+                <option value="output">2. Cari Jumlah Output</option>
+                <option value="jam">3. Cari Jam Kerja</option>
+            </select>
+        </div>
+
+        <hr class="border-gray-200 mb-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="inputContainer">
+            </div>
+
+        <button onclick="hitung()" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded-lg transition duration-200 cursor-pointer">
+            Hitung Sekarang
+        </button>
+
+        <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg hidden" id="resultContainer">
+            <h3 class="text-sm font-semibold text-blue-800 uppercase tracking-wider">Hasil:</h3>
+            <p class="text-2xl font-bold text-blue-900 mt-1" id="resultText">-</p>
+        </div>
+    </div>
+
+    <script>
+        // Struktur input untuk setiap mode
+        const modes = {
+            efisiensi: [
+                { id: 'output', label: 'Jumlah Output (Pcs)', type: 'number', placeholder: 'Contoh: 500' },
+                { id: 'smv', label: 'SMV (Standard Minute Value)', type: 'number', placeholder: 'Contoh: 2.5', step: '0.01' },
+                { id: 'operator', label: 'Jumlah Operator', type: 'number', placeholder: 'Contoh: 20' },
+                { id: 'jam', label: 'Jam Kerja', type: 'number', placeholder: 'Contoh: 8', step: '0.1' }
+            ],
+            output: [
+                { id: 'efisiensi', label: 'Efisiensi (%)', type: 'number', placeholder: 'Contoh: 85' },
+                { id: 'smv', label: 'SMV (Standard Minute Value)', type: 'number', placeholder: 'Contoh: 2.5', step: '0.01' },
+                { id: 'operator', label: 'Jumlah Operator', type: 'number', placeholder: 'Contoh: 20' },
+                { id: 'jam', label: 'Jam Kerja', type: 'number', placeholder: 'Contoh: 8', step: '0.1' }
+            ],
+            jam: [
+                { id: 'output', label: 'Jumlah Output (Pcs)', type: 'number', placeholder: 'Contoh: 500' },
+                { id: 'smv', label: 'SMV (Standard Minute Value)', type: 'number', placeholder: 'Contoh: 2.5', step: '0.01' },
+                { id: 'operator', label: 'Jumlah Operator', type: 'number', placeholder: 'Contoh: 20' },
+                { id: 'efisiensi', label: 'Efisiensi (%)', type: 'number', placeholder: 'Contoh: 85' }
+            ]
+        };
+
+        // Fungsi untuk mengubah form input berdasarkan pilihan drop-down
+        function switchMode() {
+            const mode = document.getElementById('calcMode').value;
+            const container = document.getElementById('inputContainer');
+            document.getElementById('resultContainer').classList.add('hidden');
+            container.innerHTML = '';
+
+            modes[mode].forEach(field => {
+                container.innerHTML += `
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">${field.label}</label>
+                        <input type="${field.type}" id="${field.id}" step="${field.step || '1'}" placeholder="${field.placeholder}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none">
+                    </div>
+                `;
+            });
+        }
+
+        // Fungsi utama perhitungan
+        function hitung() {
+            const mode = document.getElementById('calcMode').value;
+            let hasilText = "";
+
+            // Mengambil nilai input secara dinamis (jika ada di form)
+            const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+
+            const output = getVal('output');
+            const smv = getVal('smv');
+            const operator = getVal('operator');
+            const jam = getVal('jam');
+            const efisiensi = getVal('efisiensi');
+
+            // Validasi dasar agar tidak terjadi pembagian dengan angka 0
+            if (mode === 'efisiensi' && (operator === 0 || jam === 0)) {
+                alert("Operator dan Jam Kerja tidak boleh 0!"); return;
+            }
+            if (mode === 'output' && smv === 0) {
+                alert("SMV tidak boleh 0!"); return;
+            }
+            if (mode === 'jam' && (efisiensi === 0 || operator === 0)) {
+                alert("Efisiensi dan Operator tidak boleh 0!"); return;
+            }
+
+            // Proses Perhitungan
+            if (mode === 'efisiensi') {
+                const res = (output * smv) / (operator * 60 * jam) * 100;
+                hasilText = `Efisiensi: ${res.toFixed(2)} %`;
+            } 
+            else if (mode === 'output') {
+                const efisiensiDesimal = efisiensi / 100;
+                const res = (efisiensiDesimal * operator * 60 * jam) / smv;
+                hasilText = `Target Output: ${Math.round(res)} Pcs`;
+            } 
+            else if (mode === 'jam') {
+                const efisiensiDesimal = efisiensi / 100;
+                const resJam = (output * smv) / (efisiensiDesimal * operator * 60);
+                const resMenit = resJam * 60;
+                hasilText = `Waktu Kerja: ${resJam.toFixed(2)} Jam (~ ${Math.round(resMenit)} Menit)`;
+            }
+
+            // Tampilkan Hasil
+            const resContainer = document.getElementById('resultContainer');
+            document.getElementById('resultText').innerText = hasilText;
+            resContainer.classList.remove('hidden');
+        }
+
+        // Jalankan fungsi pertama kali saat halaman dimuat
+        window.onload = switchMode;
+    </script>
+</body>
+</html>
